@@ -283,16 +283,18 @@ def mensaje_bienvenida():
 
 class ConsoleRedirector:
     def __init__(self, text_widget):
-        self.text_widget = text_widget
+        self.text_widget = text_widget # el widget por donde se va a pasar el output
+        self.console = sys.__stdout__  # para mantener el output por consola
     
     def write(self, mensaje):
         self.text_widget.configure(state='normal')
         self.text_widget.insert('end', mensaje)
         self.text_widget.see('end') # para que auto-scrollee hasta el final
         self.text_widget.configure(state='disabled')
+        self.console.write(mensaje)  # también imprime en consola
     
     def flush(self):
-        pass # compatibilidad
+        self.console.flush()
 
 
 # if __name__ == '__main__':
