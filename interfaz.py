@@ -291,7 +291,8 @@ class ConsoleRedirector:
         self.text_widget.insert('end', mensaje)
         self.text_widget.see('end') # para que auto-scrollee hasta el final
         self.text_widget.configure(state='disabled')
-        self.console.write(mensaje)  # también imprime en consola
+        if self.console != None:
+            self.console.write(mensaje)  # también imprime en consola
     
     def flush(self):
         self.console.flush()
