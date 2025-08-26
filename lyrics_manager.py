@@ -1,8 +1,12 @@
+import asyncio
+import json
 import lyricsgenius # librería para acceder a la API de genius.com - sitio web de letras
 import os.path
 import threading
 from enum import Enum
+import requests
 from requests.exceptions import HTTPError, ConnectionError
+import httpx
 
 # Librerías para procesar etiquetas
 # from mutagen.mp3 import MP3 # ---muy raro ._.
@@ -41,10 +45,12 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-genius: lyricsgenius.Genius
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/api/procesar")
+
+
 
 cancion = "D:\\Música\\Eluveitie\\01 Eluveitie - Prologue.mp3"
-carpeta = "D:\\Música\\Eluveitie\\albums"
+carpeta = "D:\\Música\\Eluveitie\\example\\2025 - Ànv"
 
 canciones = []
 
@@ -60,24 +66,20 @@ class EstadoCancionLetras(Enum):
 
 
 
-def init_genius():
-    global genius
 
-    client_access_token = 'SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws'
-    genius = lyricsgenius.Genius(client_access_token, remove_section_headers=True, skip_non_songs=True)
 
 def recorrer_dir_recursivamente(dir: str, callback: callable):
     archivos = os.listdir(dir)
 
-    for f in archivos:
-        ruta = os.path.join(dir, f)
+    for i, archivo in enumerate(archivos):
+        ruta = os.path.join(dir, archivo)
 
         if os.path.isdir(ruta):
             recorrer_dir_recursivamente(ruta, callback)
         else:
-            callback(ruta)
+            callback(ruta, i)
 
-def procesar_mp3(ruta: str):
+def procesar_mp3(ruta: str, id: int):
     if ruta.endswith("mp3"):
         global canciones
         audiofile = eyed3.load(ruta)
@@ -96,12 +98,23 @@ def procesar_mp3(ruta: str):
             letras = ''
             estado = EstadoCancionLetras.BUSCANDO
 
-        canciones.append({"titulo": titulo, "artista": artista, "letras": letras, "ruta": ruta, 'estado': estado})
+        canciones.append({"id": id, "titulo": titulo, "artista": artista, "letras": letras, "ruta": ruta, "estado": estado})
 
 def obtener_mp3(dir):
     global canciones
     recorrer_dir_recursivamente(dir, procesar_mp3)
     return canciones
+
+
+def obtener_backend_list(canciones: list) -> list:
+    backend_list = []
+    
+    for cancion in canciones:
+        if not cancion["estado"] == EstadoCancionLetras.YA_TENIA_LETRAS:
+            backend_list.append({"id": cancion["id"], "titulo": cancion["titulo"], "artista": cancion["artista"]})
+    
+    return backend_list
+
 
 # esto va a ser cómico
 # me dice que lo haga en un HILO BRÓDER
@@ -110,17 +123,37 @@ def procesar_canciones_threading():
     hilo.start()
 
 def procesar_canciones():
-    global canciones, genius
+    global canciones
     from interfaz import actualizar_cancion_en_hilo
 
     for i, cancion in enumerate(canciones):
-        buscar_lyrics_cancion(cancion)
+        buscar_letras_cancion(cancion)
         actualizar_cancion_en_hilo(cancion, i)
 
 
+async def buscar_letras_backend(canciones):
+    formatted_canciones = obtener_backend_list(canciones)
+    payload = {"items": formatted_canciones}
+
+    async with httpx.AsyncClient() as cliente:
+        async with cliente.stream("POST", API_URL, json=payload) as respuesta:
+            async for line in respuesta.aiter_lines():
+                if line:
+                    decodificado = json.loads(line)
+                    actualizar_cancion(decodificado["id"], decodificado["letra"])
+
+
+def actualizar_cancion(id: int, letra: str):
+    cancion = canciones[id]
+    cancion["letra"] = letra
+    # escribir_letras_archivo(cancion)
+    # actualizar GUI
+    print("Letra de", cancion["artista"], "-", cancion["titulo"], ":\n", cancion["letra"])
+
+
 # Toma todos los archivos mp3 de una carpeta y si no tienen letra, las busca en genius.com y se las asigna
-def buscar_lyrics_cancion(cancion):
-    global genius
+def buscar_letras_cancion(cancion):
+    # global genius
 
     # file = eyed3.load(cancion["ruta"])
     
@@ -128,19 +161,16 @@ def buscar_lyrics_cancion(cancion):
 
     if cancion['letras'] == '':
         try:
-            song_genius = genius.search_song(cancion["titulo"], cancion["artista"])
+            # song_genius = 
+            lyrics = buscar_cancion_api({ "titulo": cancion["titulo"], "artista": cancion["artista"] })
             
-            if song_genius != None:
-                file = eyed3.load(cancion["ruta"])
-                lyrics = song_genius.lyrics
-
-                print("Salvando letras para", cancion["ruta"], "\n")
-
-                file.tag.lyrics.set(lyrics)
-                file.tag.save()
-
+            if lyrics != None:
                 cancion['letras'] = lyrics
                 cancion['estado'] = EstadoCancionLetras.LETRAS_ANADIDAS
+
+                print("Letras de", cancion["titulo"], "-", cancion["artista"], ":\n\n", lyrics, "\n\n")
+
+                escribir_letras_archivo(cancion)
             else:
                 print("No se obtuvo resultados para", cancion["artista"], "-", cancion["titulo"], "\n")
                 cancion['estado'] = EstadoCancionLetras.LETRAS_NO_ENCONTRADAS
@@ -150,19 +180,49 @@ def buscar_lyrics_cancion(cancion):
     else:
         print("La cancion", cancion["artista"], "-", cancion["titulo"], "ya tenia letras", "\n")
         
-        
+
+def escribir_letras_archivo(cancion):
+    file = eyed3.load(cancion["ruta"])
+    file.tag.lyrics.set(cancion["letras"])
+    file.tag.save()
+    print("Letras añadidas al archivo:", cancion["ruta"])
+
+
+def buscar_cancion_api(payload: dict):
+    httpx.Client()
+    # headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+    try:
+        resp = requests.post(API_URL, json=payload, timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        # reintentos exponenciales, log local, fallback
+        print("Error en la llamada al API:", e)
+        return None
+
 
 
 def run_as_script():
-    init_genius()
+    # init_genius()
     recorrer_dir_recursivamente(carpeta, procesar_mp3)
     # buscar_lyrics()
 
-# def main():
+def main():
 #     init_genius()
 #     interfaz.crear_ventana()
+    pass
 
-# if __name__ == '__main__':
-#     # run_as_script()
-#     main()
+def run_api():
+    global carpeta, canciones
+    obtener_mp3(carpeta)
+    asyncio.run(buscar_letras_backend(canciones))
+
+    # for i, cancion in enumerate(canciones):
+    #     buscar_letras_cancion(cancion)
+
+
+if __name__ == '__main__':
+    # run_as_script()
+    # main()
+    run_api()
 
