@@ -14,9 +14,8 @@ import lyrics_manager
 #                     Declaración de globales                   #
 # ------------------------------------------------------------- #
 # deepseek API key: sk-bbb216ae32a64fc58c692a6ef0ae961c
-root: tk.Tk
+root: tk.Tk = None
 ruta: tk.StringVar
-# lstCanciones: tk.Listbox
 lstCanciones: ttk.Treeview
 lblTitulo: tk.Label
 lblAutor: tk.Label
@@ -24,22 +23,12 @@ lblEstado: tk.Label
 txtLetra: tk.Text
 txtConsola: tk.Text
 
-minorStrStates = {
-    lyrics_manager.EstadoCancionLetras.SIN_LETRAS: '[X]',
-    lyrics_manager.EstadoCancionLetras.BUSCANDO: '[...]',
-    lyrics_manager.EstadoCancionLetras.ERROR_CONEXION: '[X]',
-    lyrics_manager.EstadoCancionLetras.LETRAS_NO_ENCONTRADAS: '[X]',
-    lyrics_manager.EstadoCancionLetras.NO_TIENE_LETRAS: '[X]',
-    lyrics_manager.EstadoCancionLetras.YA_TENIA_LETRAS: '[DONE]',
-    lyrics_manager.EstadoCancionLetras.LETRAS_ANADIDAS: '[DONE]'
-}
 
 strStates = {
     lyrics_manager.EstadoCancionLetras.SIN_LETRAS: 'No tiene letras',
     lyrics_manager.EstadoCancionLetras.BUSCANDO: 'Buscando letras en genius.com...',
     lyrics_manager.EstadoCancionLetras.ERROR_CONEXION: 'Error de conexión',
     lyrics_manager.EstadoCancionLetras.LETRAS_NO_ENCONTRADAS: 'No se encontraron letras',
-    lyrics_manager.EstadoCancionLetras.NO_TIENE_LETRAS: 'No tiene letras',
     lyrics_manager.EstadoCancionLetras.YA_TENIA_LETRAS: 'Ya tenía letras',
     lyrics_manager.EstadoCancionLetras.LETRAS_ANADIDAS: 'Se añadieron letras'
 }
@@ -56,11 +45,6 @@ def registrar_canciones():
         canciones = lyrics_manager.obtener_mp3(str_ruta)
 
         for cancion in canciones:
-            # song_name = ' - '.join([cancion['artista'], cancion['titulo']])
-            # song_item = ' '.join(['[...]', song_name])
-
-            # lstCanciones.insert('end', song_item)
-
             estado = strStates[cancion['estado']]
             artista = cancion['artista']
             nombre = cancion['titulo']
@@ -190,8 +174,6 @@ def crear_frame_listbox(root):
 
     lstCanciones.bind('<<TreeviewSelect>>', on_cancion_seleccionada) # <<ListboxSelect>>
 
-    # lstCanciones.bind
-
     scrollbalear_widget(frame, lstCanciones, 0, 1)
 
 def crear_barra_lateral(root):
@@ -234,7 +216,7 @@ def crear_consola_python(root):
 
     # frame.bind('<Button-1>', alternar_consola)
 
-    txtConsola = tk.Text(frame, height=6)
+    txtConsola = tk.Text(frame, height=7)
     txtConsola.grid(column=0, row=0, sticky='nsew')
     txtConsola.config(state='disabled')
 
@@ -274,7 +256,7 @@ def scrollbalear_widget(frame, widget: tk.Widget, column: int, row: int):
 
 def mensaje_bienvenida():
     print("Bienvenido a Genius Lyrics Finder, creado por Satoshi!")
-    print("Presione Buscar y seleccione una carpeta con archivos de música mp3. El programa recorrerá toda la carpeta y sus subcarpetas mostrando todas las canciones que haya, y para las que no tengan letras asignadas, descargará las letras del sitio genius.com y se las pondrá automáticamente, de ser posible")
+    print("Presione Buscar y seleccione una carpeta con archivos de música mp3. El programa recorrerá toda la carpeta y sus subcarpetas mostrando todas las canciones que haya, y para las que no tengan letras asignadas, descargará las letras del sitio genius.com y se las pondrá automáticamente, de ser posible\n")
 
 
 # ---------------------------------------------------------- #
@@ -296,8 +278,3 @@ class ConsoleRedirector:
     
     def flush(self):
         self.console.flush()
-
-
-# if __name__ == '__main__':
-#     # crear_ventana()
-#     lyricfind.main()

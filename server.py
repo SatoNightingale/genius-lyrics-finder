@@ -1,6 +1,5 @@
 import os
 import json
-from typing import Union
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -26,11 +25,18 @@ class Payload(BaseModel):
 async def buscar_cancion(cancion: Cancion):
     song_genius = genius.search_song(cancion.titulo, cancion.artista)
     
+    letra = ''
+    error = ''
+
     if song_genius:
-        letra = song_genius.lyrics if song_genius.lyrics != None else ''
-        return {"id": cancion.id, "letra": letra}
+        if song_genius.lyrics:
+            letra = song_genius.lyrics
+        else:
+            error = "no_tiene_letras"
     else:
-        return {"id": cancion.id, "letra": ''}
+        error = "error_del_servidor"
+    
+    return {"id": cancion.id, "letra": letra, "error": error}
 
     # ya luego puedo poner excepciones y eso
 
