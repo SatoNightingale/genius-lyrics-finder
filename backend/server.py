@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -8,10 +9,13 @@ import lyricsgenius
 
 app = FastAPI()
 
-GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN", 'SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws')
+GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=True)
 
+if not genius:
+    print("Error fatal: no se pudo iniciar genius")
+    sys.exit(1)
 
 class Cancion(BaseModel):
     id: int
