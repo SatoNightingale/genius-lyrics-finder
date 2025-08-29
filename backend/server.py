@@ -1,7 +1,7 @@
 import os
 import json
 import sys
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import lyricsgenius
@@ -12,7 +12,7 @@ app = FastAPI()
 GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 if GENIUS_ACCESS_TOKEN:
-    genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=True)
+    genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=False)
 else:
     print("Error fatal: no se pudo iniciar genius")
     sys.exit(1)
@@ -27,18 +27,20 @@ class Payload(BaseModel):
 
 
 async def buscar_cancion(cancion: Cancion):
-    song_genius = genius.search_song(cancion.titulo, cancion.artista)
-    
     letra = ''
     error = ''
 
-    if song_genius:
-        if song_genius.lyrics:
+    try:
+        song_genius = genius.search_song(cancion.titulo, cancion.artista)
+
+        if song_genius and song_genius.lyrics:
             letra = song_genius.lyrics
-        else:
+        elif song_genius:
             error = "no_tiene_letras"
-    else:
-        error = "error_del_servidor"
+        else:
+            error = "cancion_no_existe"
+    except Exception as e:
+        error = f"error_del_servidor: {e}"
     
     return {"id": cancion.id, "letra": letra, "error": error}
 

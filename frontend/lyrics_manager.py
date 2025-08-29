@@ -45,7 +45,8 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-API_URL = "http://127.0.0.1:8000/api/procesar"
+# API_URL = "http://127.0.0.1:8000/api/procesar"
+API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
 
 
 
@@ -113,7 +114,7 @@ def obtener_backend_list(canciones: list) -> list:
     for cancion in canciones:
         if cancion["estado"] == EstadoCancionLetras.SIN_LETRAS:
             backend_list.append({"id": cancion["id"], "titulo": cancion["titulo"], "artista": cancion["artista"]})
-        else:
+        elif cancion['estado'] == EstadoCancionLetras.YA_TENIA_LETRAS:
             print("La cancion", cancion["artista"], "-", cancion["titulo"], "ya tenia letras", "\n")
             actualizar_cancion_en_hilo(cancion, cancion['id'])
     
@@ -134,19 +135,20 @@ def procesar_canciones():
 async def buscar_letras_backend(canciones: list):
     from interfaz import actualizar_cancion_en_hilo
 
+    formatted_canciones = obtener_backend_list(canciones)
+    payload = {"items": formatted_canciones}
+
     for cancion in canciones:
         if cancion['estado'] == EstadoCancionLetras.SIN_LETRAS:
             cancion['estado'] = EstadoCancionLetras.BUSCANDO
             actualizar_cancion_en_hilo(cancion, cancion['id'])
-
-    formatted_canciones = obtener_backend_list(canciones)
-    payload = {"items": formatted_canciones}
 
     try:
         async with httpx.AsyncClient() as cliente:
             async with cliente.stream("POST", API_URL, json=payload) as respuesta:
                 async for line in respuesta.aiter_lines():
                     if line:
+                        print("line:", line)
                         decodificado = json.loads(line)
                         actualizar_cancion(decodificado["id"], decodificado["letra"], decodificado["error"])
     except httpx.RequestError as e:
