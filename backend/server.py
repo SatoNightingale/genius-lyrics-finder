@@ -30,17 +30,17 @@ async def buscar_cancion(cancion: Cancion):
     letra = ''
     error = ''
 
-    try:
-        song_genius = genius.search_song(cancion.titulo, cancion.artista)
+    # try:
+    song_genius = genius.search_song(cancion.titulo, cancion.artista)
 
-        if song_genius and song_genius.lyrics:
-            letra = song_genius.lyrics
-        elif song_genius:
-            error = "no_tiene_letras"
-        else:
-            error = "cancion_no_existe"
-    except Exception as e:
-        error = f"error_del_servidor: {e}"
+    if song_genius and song_genius.lyrics:
+        letra = song_genius.lyrics
+    elif song_genius:
+        error = "no_tiene_letras"
+    else:
+        error = "cancion_no_existe"
+    # except Exception as e:
+    #     error = f"error_del_servidor: {e}"
     
     return {"id": cancion.id, "letra": letra, "error": error}
 
