@@ -11,9 +11,9 @@ app = FastAPI()
 
 GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 
-genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=True)
-
-if not genius:
+if GENIUS_ACCESS_TOKEN:
+    genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=True)
+else:
     print("Error fatal: no se pudo iniciar genius")
     sys.exit(1)
 
@@ -53,3 +53,8 @@ async def procesar_lista_canciones(canciones: list[Cancion]):
 @app.post("/api/procesar")
 async def procesar(canciones: Payload):
     return StreamingResponse(procesar_lista_canciones(canciones.items), media_type="application/json")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
