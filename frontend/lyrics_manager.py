@@ -45,8 +45,8 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-# API_URL = "http://127.0.0.1:8000/api/procesar"
-API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
+API_URL = "http://127.0.0.1:8000/api/procesar"
+# API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
 
 
 

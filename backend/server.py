@@ -9,7 +9,7 @@ import lyricsgenius
 
 app = FastAPI()
 
-GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
+GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN", "SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws")
 
 if GENIUS_ACCESS_TOKEN:
     genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=False)
