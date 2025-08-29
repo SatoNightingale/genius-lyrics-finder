@@ -41,6 +41,9 @@ def registrar_canciones():
     global lstCanciones, ruta, root
     str_ruta = ruta.get()
 
+    # el * descompone la lista que devuelve get_children() en elementos individuales
+    lstCanciones.delete(*lstCanciones.get_children())
+
     if os.path.exists(str_ruta):
         canciones = lyrics_manager.obtener_mp3(str_ruta)
 
