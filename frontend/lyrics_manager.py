@@ -45,10 +45,10 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-# API_URL = "http://127.0.0.1:8000/api/procesar"
+API_URL = "http://127.0.0.1:8000/api/procesar"
 # API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
 # API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
-API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
+# API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
 
 
 cancion = "D:\\Música\\Eluveitie\\01 Eluveitie - Prologue.mp3"
@@ -191,31 +191,31 @@ def actualizar_cancion(id: int, letra: str, error: str):
 
 # Toma todos los archivos mp3 de una carpeta y si no tienen letra, las busca en genius.com y se las asigna
 # (En desuso)
-def buscar_letras_cancion(cancion):
-    # global genius
+# def buscar_letras_cancion(cancion):
+#     # global genius
 
-    # file = eyed3.load(cancion["ruta"])
+#     # file = eyed3.load(cancion["ruta"])
     
-    # lyrics = file.tag.lyrics
+#     # lyrics = file.tag.lyrics
 
-    if cancion['letras'] == '':
-        try:
-            # song_genius = genius.
-            lyrics = buscar_cancion_api({ "titulo": cancion["titulo"], "artista": cancion["artista"] })
+#     if cancion['letras'] == '':
+#         try:
+#             # song_genius = genius.
+#             lyrics = buscar_cancion_api({ "titulo": cancion["titulo"], "artista": cancion["artista"] })
             
-            if lyrics != None:
-                cancion['letras'] = lyrics
-                cancion['estado'] = EstadoCancionLetras.LETRAS_ANADIDAS
+#             if lyrics != None:
+#                 cancion['letras'] = lyrics
+#                 cancion['estado'] = EstadoCancionLetras.LETRAS_ANADIDAS
 
-                escribir_letras_archivo(cancion)
-            else:
-                print("No se obtuvo resultados para", cancion["artista"], "-", cancion["titulo"], "\n")
-                cancion['estado'] = EstadoCancionLetras.LETRAS_NO_ENCONTRADAS
-        except (HTTPError, ConnectionError) as error:
-            print("Error de conexión:", error.strerror)
-            cancion['estado'] = EstadoCancionLetras.ERROR_CONEXION
-    else:
-        print("La cancion", cancion["artista"], "-", cancion["titulo"], "ya tenia letras", "\n")
+#                 escribir_letras_archivo(cancion)
+#             else:
+#                 print("No se obtuvo resultados para", cancion["artista"], "-", cancion["titulo"], "\n")
+#                 cancion['estado'] = EstadoCancionLetras.LETRAS_NO_ENCONTRADAS
+#         except (HTTPError, ConnectionError) as error:
+#             print("Error de conexión:", error.strerror)
+#             cancion['estado'] = EstadoCancionLetras.ERROR_CONEXION
+#     else:
+#         print("La cancion", cancion["artista"], "-", cancion["titulo"], "ya tenia letras", "\n")
         
 
 def escribir_letras_archivo(cancion):
@@ -249,6 +249,18 @@ def run_as_script():
     asyncio.run(buscar_letras_backend(canciones))
 
 
+async def test():
+    payload = {"items": [
+        {"id": 0,  "titulo": "A rose for Epona", "artista": "Eluveitie"},
+    ]}
+
+    async with httpx.AsyncClient(timeout=20.0) as cliente:
+        async with cliente.stream("POST", API_URL, json=payload) as respuesta:
+            async for line in respuesta.aiter_lines():
+                if line:
+                    decodificado = json.loads(line)
+                    print(decodificado)
+
 if __name__ == '__main__':
-    run_as_script()
+    asyncio.run(test())
 
