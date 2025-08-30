@@ -9,7 +9,7 @@ import lyricsgenius
 
 app = FastAPI()
 
-GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN", "SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws")
+GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 if GENIUS_ACCESS_TOKEN:
     genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=False)
@@ -30,17 +30,17 @@ async def buscar_cancion(cancion: Cancion):
     letra = ''
     error = ''
 
-    # try:
-    song_genius = genius.search_song(cancion.titulo, cancion.artista)
+    try:
+        song_genius = genius.search_song(cancion.titulo, cancion.artista)
 
-    if song_genius and song_genius.lyrics:
-        letra = song_genius.lyrics
-    elif song_genius:
-        error = "no_tiene_letras"
-    else:
-        error = "cancion_no_existe"
-    # except Exception as e:
-    #     error = f"error_del_servidor: {e}"
+        if song_genius and song_genius.lyrics:
+            letra = song_genius.lyrics
+        elif song_genius:
+            error = "no_tiene_letras"
+        else:
+            error = "cancion_no_existe"
+    except Exception as e:
+        error = f"error_del_servidor: {e}"
     
     return {"id": cancion.id, "letra": letra, "error": error}
 
@@ -57,6 +57,6 @@ async def procesar(canciones: Payload):
     return StreamingResponse(procesar_lista_canciones(canciones.items), media_type="application/json")
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
