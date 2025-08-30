@@ -153,13 +153,18 @@ async def buscar_letras_backend(canciones: list):
                         print("line:", line)
                         decodificado = json.loads(line)
                         actualizar_cancion(decodificado["id"], decodificado["letra"], decodificado["error"])
-    except httpx.RequestError as e:
-        print(f"Error de conexión: {e}")
+    except (json.JSONDecodeError | httpx.RequestError) as e:
+        codigo_error = ''
+        if e is httpx.RequestError:
+            print(f"Error de conexión: {e}")
+            codigo_error = 'error_conexion'
+        elif e is json.JSONDecodeError:
+            print(f"Error del servidor: {e}")
+            codigo_error = 'error_del_servidor'
 
         for i, data_cancion in enumerate(formatted_canciones):
-            # print(canciones[data_cancion['id']])
             if canciones[data_cancion['id']]['estado'] == EstadoCancionLetras.BUSCANDO:
-                actualizar_cancion(data_cancion['id'], '', 'error_conexion')
+                actualizar_cancion(data_cancion['id'], '', codigo_error)
 
 
 def actualizar_cancion(id: int, letra: str, error: str):

@@ -12,7 +12,12 @@ app = FastAPI()
 GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 if GENIUS_ACCESS_TOKEN:
-    genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN, remove_section_headers=True, skip_non_songs=False)
+    genius = lyricsgenius.Genius(
+        GENIUS_ACCESS_TOKEN,
+        remove_section_headers=True,
+        skip_non_songs=False,
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    )
 else:
     print("Error fatal: no se pudo iniciar genius")
     sys.exit(1)
