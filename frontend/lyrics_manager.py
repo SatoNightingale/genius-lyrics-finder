@@ -91,8 +91,9 @@ def procesar_mp3(ruta: str, id: int):
         artista = audiofile.tag.artist
 
         letras = audiofile.tag.lyrics
-        if letras:
+        if letras and letras[0].text != '':
             letras = letras[0].text
+            print("letras", letras)
             estado = EstadoCancionLetras.YA_TENIA_LETRAS
         else:
             letras = ''
@@ -154,16 +155,17 @@ async def buscar_letras_backend(canciones: list):
     except httpx.RequestError as e:
         print(f"Error de conexión: {e}")
 
-        for i, cancion in enumerate(formatted_canciones):
-            if cancion['estado'] == EstadoCancionLetras.BUSCANDO:
-                actualizar_cancion(i, '', 'error_conexion')
+        for i, data_cancion in enumerate(formatted_canciones):
+            # print(canciones[data_cancion['id']])
+            if canciones[data_cancion['id']]['estado'] == EstadoCancionLetras.BUSCANDO:
+                actualizar_cancion(data_cancion['id'], '', 'error_conexion')
 
 
 def actualizar_cancion(id: int, letra: str, error: str):
     from interfaz import actualizar_cancion_en_hilo
 
     cancion = canciones[id]
-
+    
     match error:
         case 'no_tiene_letras':
             cancion["estado"] = EstadoCancionLetras.LETRAS_NO_ENCONTRADAS
@@ -190,7 +192,7 @@ def buscar_letras_cancion(cancion):
 
     if cancion['letras'] == '':
         try:
-            # song_genius = 
+            # song_genius = genius.
             lyrics = buscar_cancion_api({ "titulo": cancion["titulo"], "artista": cancion["artista"] })
             
             if lyrics != None:
@@ -215,19 +217,22 @@ def escribir_letras_archivo(cancion):
     print("Letras añadidas al archivo:", cancion["ruta"])
 
 
-
-def buscar_cancion_api(payload: dict):
-    httpx.Client()
-    # headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
-    try:
-        resp = requests.post(API_URL, json=payload, timeout=5)
-        resp.raise_for_status()
-        return resp.json()
-    except requests.RequestException as e:
-        # reintentos exponenciales, log local, fallback
-        print("Error en la llamada al API:", e)
+def get_cancion(index):
+    if index >= 0 and index < len(canciones):
+        return canciones[index]
+    else:
         return None
 
+
+def actualizar_info_cancion(index, titulo: str, artista: str):
+    cancion = get_cancion(index)
+    if cancion:
+        cancion['titulo'] = titulo
+        cancion['artista'] = artista
+
+
+def clear_canciones():
+    canciones.clear()
 
 
 def run_as_script():
