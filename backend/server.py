@@ -45,11 +45,10 @@ async def buscar_cancion(cancion: Cancion):
         else:
             error = "cancion_no_existe"
     except Exception as e:
-        error = f"error_del_servidor: {e}"
+        error = "error_del_servidor"
+        print(e)
     
     return {"id": cancion.id, "letra": letra, "error": error}
-
-    # ya luego puedo poner excepciones y eso
 
 async def procesar_lista_canciones(canciones: list[Cancion]):
     for cancion in canciones:

@@ -47,8 +47,8 @@ eyed3.log.setLevel("ERROR")
 
 # API_URL = "http://127.0.0.1:8000/api/procesar"
 # API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
-API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
-
+# API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
+API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
 
 
 cancion = "D:\\Música\\Eluveitie\\01 Eluveitie - Prologue.mp3"
@@ -150,16 +150,16 @@ async def buscar_letras_backend(canciones: list):
             async with cliente.stream("POST", API_URL, json=payload) as respuesta:
                 async for line in respuesta.aiter_lines():
                     if line:
-                        print("line:", line)
+                        # print("line:", line)
                         decodificado = json.loads(line)
                         actualizar_cancion(decodificado["id"], decodificado["letra"], decodificado["error"])
     except (json.JSONDecodeError | httpx.RequestError) as e:
         codigo_error = ''
         if e is httpx.RequestError:
-            print(f"Error de conexión: {e}")
+            # print(f"Error de conexión: {e}")
             codigo_error = 'error_conexion'
         elif e is json.JSONDecodeError:
-            print(f"Error del servidor: {e}")
+            # print(f"Error del servidor: {e}")
             codigo_error = 'error_del_servidor'
 
         for i, data_cancion in enumerate(formatted_canciones):
@@ -175,7 +175,9 @@ def actualizar_cancion(id: int, letra: str, error: str):
     match error:
         case 'no_tiene_letras':
             cancion["estado"] = EstadoCancionLetras.LETRAS_NO_ENCONTRADAS
-        case 'error_del_servidor' | 'error_conexion':
+        case 'error_del_servidor':
+            cancion['estado'] = EstadoCancionLetras.ERROR_CONEXION
+        case 'error_conexion':
             cancion['estado'] = EstadoCancionLetras.ERROR_CONEXION
         case _:
             cancion["letra"] = letra
