@@ -103,9 +103,9 @@ async def buscar():
         
         # if song['title'] == "Rap God":
         song_id = song['id']
+        print(song_id)
+        print(song['title'])
         song = genius.song(song_id)['song']
         lyrics = genius.lyrics(song_id)
         print(lyrics)
         return lyrics
-    # for key in song:
-    #     print(key, song[key], '\n')
