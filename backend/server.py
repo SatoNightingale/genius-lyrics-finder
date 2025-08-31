@@ -8,11 +8,13 @@ import httpx
 from pydantic import BaseModel
 import lyricsgenius
 import requests
+from dotenv import load_dotenv
 
 
 app = FastAPI()
 
-GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN", "SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws")
+load_dotenv(".env")
+GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 if GENIUS_ACCESS_TOKEN:
     genius = lyricsgenius.Genius(
