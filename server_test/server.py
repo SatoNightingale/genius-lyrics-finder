@@ -26,10 +26,6 @@ else:
     sys.exit(1)
 
 
-GENIUS_TOKEN="SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws"
-genius = lyricsgenius.Genius(GENIUS_TOKEN)
-
-
 # headers = {
 #     "Authorization": f"Bearer {GENIUS_TOKEN}",
 #     # "User-Agent": "Mozilla/5.0"
@@ -96,6 +92,7 @@ async def buscar():
     titulo = "A rose for Epona"
     autor = "Eluveitie"
     search_term = f"{autor} {titulo}"
+    print(search_term)
     songs = genius.search_songs(search_term)["hits"]
 
     for song in songs:
