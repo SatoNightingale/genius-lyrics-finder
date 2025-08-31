@@ -44,8 +44,7 @@ async def request_song(titulo: str, artista: str):
     base_url = "http://api.genius.com"
     headers = {'Authorization': 'Bearer ' + GENIUS_ACCESS_TOKEN}
     search_url = base_url + "/search"
-    song_title = titulo
-    params = {'q': song_title}
+    params = {'q': titulo}
     # response = requests.get(search_url, params=params, headers=headers)
     async with httpx.AsyncClient() as cliente:
         response = await cliente.get(search_url, params=params, headers=headers, follow_redirects=True)
@@ -58,15 +57,15 @@ async def request_song(titulo: str, artista: str):
     # send the full title of the song
     full_title = data['response']['hits'][0]['result']['full_title']
     artist = data['response']['hits'][0]['result']['primary_artist']['name']
-    FullSearchTerm = f"{artist} {song_title}"
-    print(full_title)
+    FullSearchTerm = f"{artist} {titulo}"
+    # print(full_title)
     print(FullSearchTerm)
 
     # get the song ID
     song_id = data['response']['hits'][0]['result']['id']
     print(f"song_id is {song_id}")
 
-    song = await search_song_async(titulo=full_title, artista=artist, song_id=song_id)
+    song = await search_song_async(titulo=titulo, artista=artist, song_id=song_id)
     print("lyrics:", song.lyrics)
     return song
 

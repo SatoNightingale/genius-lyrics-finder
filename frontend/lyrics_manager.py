@@ -45,10 +45,10 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-API_URL = "http://127.0.0.1:8000/api/procesar"
+# API_URL = "http://127.0.0.1:8000/api/procesar"
 # API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
 # API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
-# API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
+API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
 
 
 cancion = "D:\\Música\\Eluveitie\\01 Eluveitie - Prologue.mp3"
