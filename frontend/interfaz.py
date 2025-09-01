@@ -1,7 +1,7 @@
 import sys
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 import os
 
 import lyrics_manager
@@ -21,6 +21,7 @@ lstCanciones: ttk.Treeview
 lblTitulo: tk.Label
 lblArtista: tk.Label
 lblEstado: tk.Label
+lblRuta: tk.Label
 tfdTitulo: tk.Entry
 tfdArtista: tk.Entry
 panelInfo: tk.Frame
@@ -51,29 +52,27 @@ def registrar_canciones():
     if os.path.exists(str_ruta):
         lstCanciones.delete(*lstCanciones.get_children())
         lyrics_manager.clear_canciones()
-
         canciones = lyrics_manager.obtener_mp3(str_ruta)
-
+        
         for cancion in canciones:
             estado = strStates[cancion['estado']]
             artista = cancion['artista']
             nombre = cancion['titulo']
             item = (estado, artista, nombre)
             lstCanciones.insert('', 'end', values=item)
+        
+        lyrics_manager.run_threading(lyrics_manager.iniciar_busqueda, canciones)
     else:
         print('ruta invalida')
     
     root.update_idletasks()
 
-    lyrics_manager.procesar_canciones_threading()
-
 def actualizar_cancion_lista(cancion, index):
     global lstCanciones, root
-
     iid = lstCanciones.get_children()[index]
 
     lstCanciones.delete(iid)
-    # print(cancion)
+    
     estado = strStates[cancion['estado']]
     artista = cancion['artista']
     nombre = cancion['titulo']
@@ -84,19 +83,19 @@ def actualizar_cancion_lista(cancion, index):
     root.update_idletasks()
 
 
-def actualizar_cancion_en_hilo(cancion, index):
+def actualizar_cancion_en_hilo(cancion):
     global root
-    root.after(0, lambda i=index, c=cancion: actualizar_cancion_lista(c, i))
+    root.after(0, lambda i=cancion['id'], c=cancion: actualizar_cancion_lista(c, i))
 
 
 def mostrar_info_cancion(cancion):
-    global lblTitulo, lblArtista, lblEstado, txtLetra
+    global lblTitulo, lblArtista, lblEstado, lblRuta, txtLetra
 
     lblTitulo['text'] = 'Titulo: ' + cancion['titulo']
     lblArtista['text'] = 'Autor: ' + cancion['artista']
-
     lblEstado['text'] = 'Estado: ' + strStates[cancion['estado']]
-    
+    lblRuta['text'] = 'Ruta: ' + cancion['ruta']
+
     txtLetra.config(state='normal')
     txtLetra.delete('1.0', tk.END)
     txtLetra.insert('1.0', cancion['letras'])
@@ -118,7 +117,7 @@ def get_listbox_index() -> int | None:
 #                      Funciones de evento                      #
 # ------------------------------------------------------------- #
 
-def buscar_carpeta():
+def buscar_carpeta(event=None):
     global ruta
 
     ruta.set(filedialog.askdirectory(
@@ -131,7 +130,7 @@ def buscar_carpeta():
 
 def on_cancion_seleccionada(event):
     index = get_listbox_index()
-    if index:
+    if index != None:
         cancion = lyrics_manager.get_cancion(index)
         if cancion:
             mostrar_info_cancion(cancion)
@@ -167,13 +166,26 @@ def cambiar_modo_edicion():
         else:
             panelEdicion.grid_remove()
             panelInfo.grid()
-            lyrics_manager.actualizar_info_cancion(indice, tfdTitulo.get(), tfdArtista.get())
+            lyrics_manager.modificar_datos_cancion(indice, tfdTitulo.get(), tfdArtista.get())
 
             actualizar_cancion_lista(cancion, indice)
             lblTitulo.config(text="Titulo: " + cancion['titulo'])
             lblArtista.config(text="Artista: " + cancion['artista'])
 
 
+def recargar_canciones():
+    global lstCanciones
+
+    selection = lstCanciones.selection()
+
+    if selection:
+        ids = []
+        for sel in selection:
+            indice = lstCanciones.get_children().index(sel)
+            if indice:
+                ids.append(indice)
+        
+        lyrics_manager.run_threading(lyrics_manager.recargar_canciones, ids)
 
 
 
@@ -196,6 +208,7 @@ def crear_frame_seleccion(root):
 
     boton = tk.Button(frm, text="Buscar", command=buscar_carpeta)
     boton.grid(column=1, row=1, padx=10, sticky='ew')
+    boton.bind("<Return>", buscar_carpeta)
 
     return frm
 
@@ -228,14 +241,11 @@ def crear_frame_listbox(root):
     return frame
 
 def crear_barra_lateral(root):
-    global lblEstado, panelInfo, panelEdicion
+    global lblEstado, lblRuta, panelInfo, panelEdicion
 
     frame = ttk.Labelframe(root, padding=10, text="Información de la canción")
-    
-    frame.columnconfigure(0, minsize=200) # weight=1,
-    frame.rowconfigure(3, weight=1)
 
-    panelInfo = crear_panel_info(frame)
+    panelInfo = crear_panel_info_editable(frame)
     panelEdicion = crear_panel_edicion(frame)
     botones = crear_panel_botones(frame)
 
@@ -247,17 +257,23 @@ def crear_barra_lateral(root):
     lblEstado = tk.Label(frame, text="Estado:")
     lblEstado.grid(column=0, row=1, sticky='w')
 
-    botones.grid(column=0, row=2, sticky='ew')
+    lblRuta = tk.Label(frame, text="Ruta:", wraplength=200, justify='left')
+    lblRuta.grid(column=0, row=2, sticky='w')
+
+    botones.grid(column=0, row=3, sticky='ew')
 
     # incluso se podría poner la ruta
 
     letra = crear_panel_letra(frame)
-    letra.grid(column=0, row=3, sticky='nsew')
+    letra.grid(column=0, row=4, sticky='nsew')
+
+    frame.columnconfigure(0, minsize=200) # weight=1,
+    frame.rowconfigure(4, weight=1)
 
     return frame
 
 
-def crear_panel_info(parent):
+def crear_panel_info_editable(parent):
     global lblArtista, lblTitulo
 
     frame = ttk.Frame(parent)
@@ -287,6 +303,8 @@ def crear_panel_edicion(parent):
     tfdArtista = tk.Entry(frame)
     tfdArtista.grid(column=1, row=1, padx=5, sticky='ew')
 
+    frame.columnconfigure(1, weight=1)
+
     return frame
 
 
@@ -298,7 +316,7 @@ def crear_panel_botones(parent):
     btnEditar = tk.Button(frame, text="Editar", command=cambiar_modo_edicion)
     btnEditar.grid(column=0, row=0, padx=5, sticky='ew')
 
-    btnRecargar = tk.Button(frame, text="Recargar letra")
+    btnRecargar = tk.Button(frame, text="Buscar de nuevo", command=recargar_canciones)
     btnRecargar.grid(column=1, row=0, padx=5, sticky='ew')
 
     frame.columnconfigure(0, weight=1)
@@ -325,6 +343,7 @@ def crear_panel_letra(parent):
     scrollbalear_widget(frame, txtLetra, 1, 0)
 
     frame.rowconfigure(1, weight=1)
+    frame.columnconfigure(0, weight=1)
 
     return frame
 
@@ -383,15 +402,21 @@ def crear_ventana():
     
     root.mainloop()
 
+
 def scrollbalear_widget(frame, widget: tk.Widget, row: int, column: int):
     scrollbar = tk.Scrollbar(frame, orient="vertical", command=widget.yview)
     scrollbar.grid(column=column+1, row=row, sticky='ns')
     widget.config(yscrollcommand=scrollbar.set)
 
+
 def mensaje_bienvenida():
     print("Bienvenido a Genius Lyrics Finder, creado por Satoshi!")
-    print("Presione Buscar y seleccione una carpeta con archivos de música mp3. El programa recorrerá toda la carpeta y sus subcarpetas mostrando todas las canciones que haya, y para las que no tengan letras asignadas, descargará las letras del sitio genius.com y se las pondrá automáticamente, de ser posible\n")
+    print("Presione Buscar y seleccione una carpeta con archivos de música mp3. El programa recorrerá la carpeta buscando todas sus canciones, y para las que no tengan letras asignadas, descargará las letras del sitio genius.com e intentará ponérselas automáticamente\n")
 
+
+def mensaje_fallo(mensaje):
+    messagebox.showerror("Error", message=mensaje)
+    print(mensaje)
 
 # ---------------------------------------------------------- #
 #       Para capturar y redirigir el output de la consola    #
