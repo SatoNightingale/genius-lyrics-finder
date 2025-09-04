@@ -15,7 +15,7 @@ class Password(BaseModel):
     key: str
 
 
-@app.get("/getkey")
+@app.post("/getkey")
 async def get_api_key(password: Password):
     if password.key == KEY_PASSWORD:
         return {"password": ENCRYPTED_TOKEN}

@@ -46,7 +46,7 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.save() # salvar
 
 API_URL = "http://127.0.0.1:8000/getkey"
-# API_URL = "http://genius-lyrics-finder.vercel.app/api/procesar"
+API_URL = "http://genius-lyrics-finder.vercel.app/getkey"
 # API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
 # API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
 
@@ -71,7 +71,7 @@ load_dotenv(".env")
 
 def get_token():
     try:
-        response = requests.get(API_URL, json={"key": password}, timeout=10.0)
+        response = requests.post(API_URL, json={"key": password}, timeout=10.0)
         data = response.json()
         key = data['password']
         
