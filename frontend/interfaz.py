@@ -1,14 +1,10 @@
 import sys
+import os
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, filedialog, messagebox
-import os
 
 import lyrics_manager
-# from lyrics_manager import EstadoCancionLetras
-# from lyrics_manager import canciones
-# from lyrics_manager import obtener_mp3
-# from lyrics_manager import buscar_lyrics
 
 # ------------------------------------------------------------- #
 #                     Declaración de globales                   #
@@ -374,11 +370,22 @@ def crear_consola_python(root):
     return frame
 
 
+def asignar_icono(root):
+    if getattr(sys, 'frozen', False):
+        ruta_icono = os.path.join(sys._MEIPASS, 'genius.ico')
+    else:
+        ruta_icono = "D:\\Imágenes\\Iconos\\Iconos\\genius\\genius.ico"
+    
+    root.iconbitmap(ruta_icono)
+
+
 def crear_ventana():
     global root
     root = tk.Tk()
     root.title("Genius Lyrics Finder")
     
+    asignar_icono(root)
+
     global ruta
     ruta = tk.StringVar()
 

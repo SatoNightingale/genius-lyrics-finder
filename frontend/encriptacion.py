@@ -1,65 +1,52 @@
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
+from Crypto.Cipher import AES
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Random import get_random_bytes
 import base64
-import os
 
-from dotenv import load_dotenv
+# Parámetros globales
+SALT_SIZE = 16
+KEY_SIZE = 32
+NONCE_SIZE = 16
+ITERACIONES = 100_000
 
-# Función para generar una clave a partir de una contraseña
-def generar_clave(password: str, salt: bytes) -> bytes:
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100_000,
-        backend=default_backend()
-    )
-    return base64.urlsafe_b64encode(kdf.derive(password.encode()))
+def cifrar(texto_plano, password):
+    salt = get_random_bytes(SALT_SIZE)
+    key = PBKDF2(password, salt, dkLen=KEY_SIZE, count=ITERACIONES)
+    cipher = AES.new(key, AES.MODE_EAX)
+    ciphertext, tag = cipher.encrypt_and_digest(texto_plano.encode('utf-8'))
 
-# Cifrar
-def cifrar(texto: str, password: str) -> tuple[bytes, bytes]:
-    salt = os.urandom(16)  # Sal aleatoria
-    clave = generar_clave(password, salt)
-    fernet = Fernet(clave)
-    texto_cifrado = fernet.encrypt(texto.encode())
-    return texto_cifrado, salt
-
-# Descifrar
-def descifrar(texto_cifrado: bytes, password: str, salt: bytes) -> str:
-    clave = generar_clave(password, salt)
-    fernet = Fernet(clave)
-    return fernet.decrypt(texto_cifrado).decode()
+    # Empaquetamos salt + nonce + tag + ciphertext
+    datos = salt + cipher.nonce + tag + ciphertext
+    return base64.b64encode(datos).decode('utf-8')
 
 
-def cifrar_api_key():
-    load_dotenv(".env")
+def descifrar(texto_cifrado_b64, password):
+    datos = base64.b64decode(texto_cifrado_b64.encode('utf-8'))
 
-    api_key = os.getenv("GENIUS_TOKEN")
-    password = os.getenv("KEY_PASSWORD")
+    salt = datos[:SALT_SIZE]
+    nonce = datos[SALT_SIZE:SALT_SIZE+NONCE_SIZE]
+    tag = datos[SALT_SIZE+NONCE_SIZE:SALT_SIZE+NONCE_SIZE+16]
+    ciphertext = datos[SALT_SIZE+NONCE_SIZE+16:]
 
-    texto_cifrado, salt = cifrar(api_key, password)
+    key = PBKDF2(password, salt, dkLen=KEY_SIZE, count=ITERACIONES)
+    cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+    texto_plano = cipher.decrypt_and_verify(ciphertext, tag)
 
-    texto_cifrado_str = base64.b64encode(texto_cifrado).decode('ascii')
-    salt_str = base64.b64encode(salt).decode('ascii')
-
-    print("Sal:", salt_str)
-    print("Texto cifrado:", texto_cifrado_str)
-
-    texto_descifrado = descifrar(texto_cifrado, password, salt)
-    print("Texto descifrado:", texto_descifrado)
+    return texto_plano.decode('utf-8')
 
 
-def descifrar_api_key(texto_b64, password, sal_b64):
-    texto = base64.b64decode(texto_b64.encode('ascii'))
-    sal = base64.b64decode(sal_b64.encode('ascii'))
-    key = descifrar(texto, password, sal)
-    return key
+def test():
+    clave_original = "SPqGfxsIk4OkUD2mKptJfGWxz-2bhjlcAIT0zAWfVACV5df3Hu5uz4ndVBfA7tws"
+    password = "rgusdjzo;v;laoeq3t8w9 e0g7054w8h tn78w09tp82u0 n3"
+
+    # Encriptar
+    cifrado = cifrar(clave_original, password)
+    print("Texto cifrado:", cifrado)
+
+    # Desencriptar
+    descifrado = descifrar(cifrado, password)
+    print("Texto descifrado:", descifrado)
 
 
-if __name__ == "__main__":
-    # cifrar_api_key()
-    descifrar_api_key()
-
-    
+# if __name__ == "__main__":
+#     test()

@@ -2,9 +2,8 @@ import os.path
 import threading
 from enum import Enum
 from dotenv import load_dotenv
-from httpx import ProxyError
 import requests
-from requests.exceptions import HTTPError, ConnectionError, Timeout
+from requests.exceptions import HTTPError, ConnectionError, Timeout, ProxyError
 import lyricsgenius
 
 # Librerías para procesar etiquetas
@@ -45,7 +44,7 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-API_URL = "http://127.0.0.1:8000/getkey"
+# API_URL = "http://127.0.0.1:8000/getkey"
 API_URL = "http://genius-lyrics-finder.vercel.app/getkey"
 # API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
 # API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
@@ -53,7 +52,6 @@ API_URL = "http://genius-lyrics-finder.vercel.app/getkey"
 
 
 password = "rgusdjzo;v;laoeq3t8w9 e0g7054w8h tn78w09tp82u0 n3"
-sal = 'DLSlT2GRHYMEoJCRRbwDQg=='
 
 canciones = []
 
@@ -76,12 +74,13 @@ def get_token():
         key = data['password']
         
         if key != "":
-            from encriptacion import descifrar_api_key
-            token = descifrar_api_key(key, password, sal)
+            from encriptacion import descifrar
+            token = descifrar(key, password)
         else:
             token = None
     except Exception as e:
         token = 'general_exception'
+        print(e)
     except ProxyError as e:
         token = 'proxy_error'
     
@@ -149,23 +148,24 @@ def procesar_canciones(canciones: list):
     token = get_token()
     genius = crear_genius(token)
     
-    if genius:
+    from interfaz import mensaje_fallo
+    ok = False
+
+    if token == 'general_exception':
+        mensaje_fallo("Error: No se pudo logear en genius. Probablemente sea un problema de conexión")
+    elif token == 'proxy_error':
+        mensaje_fallo("Error al establecer conexión con el proxy. Intente desactivar el proxy")
+    elif genius:
+        ok = True
         for cancion in canciones:
             if cancion['estado'] == EstadoCancionLetras.BUSCANDO:
                 lyrics, error = buscar_genius(cancion, genius)
                 actualizar_cancion(cancion, lyrics, error)
-    else:
-        from interfaz import mensaje_fallo
         
-        match token:
-            case 'general_exception':
-                mensaje_fallo("Error: No se pudo logear en genius. Probablemente sea un problema de conexión")
-            case 'proxy_error':
-                mensaje_fallo("Error al establecer conexión con el proxy. Intente desactivar el proxy")
-        
+    if not ok:
         for cancion in canciones:
             if cancion['estado'] == EstadoCancionLetras.BUSCANDO:
-                actualizar_cancion(cancion['id'], '', 'error_conexion')
+                actualizar_cancion(cancion, '', EstadoCancionLetras.ERROR_CONEXION)
 
 
 def actualizar_cancion(cancion: dict, letra: str, error: EstadoCancionLetras):
@@ -277,6 +277,6 @@ def run_as_script():
 def test():
     print(get_token())
 
-if __name__ == '__main__':
-    test()
+# if __name__ == '__main__':
+#     test()
 
