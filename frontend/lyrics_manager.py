@@ -44,8 +44,8 @@ eyed3.log.setLevel("ERROR")
 # audiofile.tag.lyrics.set("La pele montaña, heyo heyo~~")
 # audiofile.tag.save() # salvar
 
-# API_URL = "http://127.0.0.1:8000/getkey"
-API_URL = "http://genius-lyrics-finder.vercel.app/getkey"
+API_URL = "http://127.0.0.1:8000/getkey"
+# API_URL = "http://genius-lyrics-finder.vercel.app/getkey"
 # API_URL = "https://genius-lyrics-finder-satonightingale8475-yooxz7gs.leapcell.dev/api/procesar"
 # API_URL = "https://genius-lyrics-finder.onrender.com/api/procesar"
 
@@ -71,13 +71,10 @@ def get_token():
     try:
         response = requests.post(API_URL, json={"key": password}, timeout=10.0)
         data = response.json()
-        key = data['password']
+        token = data['password']
         
-        if key != "":
-            from encriptacion import descifrar
-            token = descifrar(key, password)
-        else:
-            token = None
+        if token == "":
+            token = None # 'contrasena_incorrecta'
     except Exception as e:
         token = 'general_exception'
         print(e)
