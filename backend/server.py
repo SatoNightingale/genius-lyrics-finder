@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 app = FastAPI()
 
 load_dotenv(".env")
-# GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
+GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_TOKEN")
 KEY_PASSWORD = os.getenv("KEY_PASSWORD")
-ENCRYPTED_TOKEN = os.getenv("ENCRYPTED_TOKEN")
+# ENCRYPTED_TOKEN = os.getenv("ENCRYPTED_TOKEN")
+# GENIUS_TOKEN = os.getenv("GENIUS_TOKEN")
 
 class Password(BaseModel):
     key: str
@@ -18,7 +19,7 @@ class Password(BaseModel):
 @app.post("/getkey")
 async def get_api_key(password: Password):
     if password.key == KEY_PASSWORD:
-        return {"password": ENCRYPTED_TOKEN}
+        return {"password": GENIUS_ACCESS_TOKEN}
     else:
         return ""
 

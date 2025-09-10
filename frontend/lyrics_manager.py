@@ -71,13 +71,10 @@ def get_token():
     try:
         response = requests.post(API_URL, json={"key": password}, timeout=10.0)
         data = response.json()
-        key = data['password']
+        token = data['password']
         
-        if key != "":
-            from encriptacion import descifrar
-            token = descifrar(key, password)
-        else:
-            token = None
+        if token == "":
+            token = None # 'contrasena_incorrecta'
     except Exception as e:
         token = 'general_exception'
         print(e)
