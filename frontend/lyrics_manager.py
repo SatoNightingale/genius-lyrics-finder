@@ -74,7 +74,7 @@ def get_token():
         token = data['password']
         
         if token == "":
-            token = None # 'contrasena_incorrecta'
+            token = None # 'contraseña_incorrecta'
     except Exception as e:
         token = 'general_exception'
         print(e)
